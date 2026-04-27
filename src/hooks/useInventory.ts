@@ -40,11 +40,6 @@ export interface UseInventoryReturn {
   setFilters: (action: SetStateAction<Filters>) => void;
   sortBy: SortBy;
   setSortBy: (s: SortBy) => void;
-  viewMode: 'grid' | 'list';
-  setViewMode: (v: 'grid' | 'list') => void;
-  page: number;
-  setPage: (p: number) => void;
-  pageSize: number;
   resetFilters: () => void;
   availableOptions: AvailableOptions;
 }
@@ -62,27 +57,23 @@ const DEFAULT_FILTERS: Filters = {
   conditionMin: null,
 };
 
+const DEFAULT_SORT: SortBy = 'auction_start';
+
 export function useInventory(allVehicles: Vehicle[]): UseInventoryReturn {
   const [searchQuery, setSearchQueryRaw] = useState('');
   const [filters, setFiltersRaw] = useState<Filters>(DEFAULT_FILTERS);
-  const [sortBy, setSortByRaw] = useState<SortBy>('auction_start');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [page, setPage] = useState(1);
-  const pageSize = 24;
+  const [sortBy, setSortByRaw] = useState<SortBy>(DEFAULT_SORT);
 
   const setSearchQuery = useCallback((q: string) => {
     setSearchQueryRaw(q);
-    setPage(1);
   }, []);
 
   const setFilters = useCallback((action: SetStateAction<Filters>) => {
     setFiltersRaw(action);
-    setPage(1);
   }, []);
 
   const setSortBy = useCallback((s: SortBy) => {
     setSortByRaw(s);
-    setPage(1);
   }, []);
 
   const availableOptions = useMemo<AvailableOptions>(
@@ -187,13 +178,11 @@ export function useInventory(allVehicles: Vehicle[]): UseInventoryReturn {
 
   const totalCount = useMemo(() => sorted.length, [sorted]);
 
-  const results = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return sorted.slice(start, start + pageSize);
-  }, [sorted, page, pageSize]);
+  const results = sorted;
 
   const activeFilterCount = useMemo(
     () =>
+      (sortBy !== DEFAULT_SORT ? 1 : 0) +
       filters.make.length +
       filters.body_style.length +
       filters.fuel_type.length +
@@ -204,13 +193,12 @@ export function useInventory(allVehicles: Vehicle[]): UseInventoryReturn {
       (filters.yearMin !== null ? 1 : 0) +
       (filters.yearMax !== null ? 1 : 0) +
       (filters.conditionMin !== null ? 1 : 0),
-    [filters],
+    [filters, sortBy],
   );
 
   const resetFilters = useCallback(() => {
     setFiltersRaw(DEFAULT_FILTERS);
-    setSearchQueryRaw('');
-    setPage(1);
+    setSortByRaw(DEFAULT_SORT);
   }, []);
 
   return {
@@ -223,11 +211,6 @@ export function useInventory(allVehicles: Vehicle[]): UseInventoryReturn {
     setFilters,
     sortBy,
     setSortBy,
-    viewMode,
-    setViewMode,
-    page,
-    setPage,
-    pageSize,
     resetFilters,
     availableOptions,
   };

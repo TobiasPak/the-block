@@ -2,8 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* === Light Theme — OpenLane Professional === */
+
+  /* Backgrounds (RGB for Tailwind opacity-modifier support) */
+  --color-bg-page:        240 242 245;  /* #f0f2f5 — light grey page bg */
+  --color-bg-surface:     255 255 255;  /* #ffffff — white cards/panels */
+  --color-bg-elevated:    248 249 251;  /* #f8f9fb — off-white hover/inputs */
+  --color-bg-subtle:      232 237 243;  /* #e8edf3 — cool grey dividers/tags */
+
+  /* Primary brand blue */
+  --color-brand-primary:  29 111 239;   /* #1d6fef — OpenLane blue */
+  --color-brand-hover:    26 95 212;    /* #1a5fd4 — darker hover */
+  --color-brand-muted:    37 99 235;    /* #2563eb — secondary blue */
+  --color-brand-dark:     30 58 138;    /* #1e3a8a — deep blue */
+  --color-brand-subtle:   219 234 254;  /* #dbeafe — light blue tint */
+
+  /* Text */
+  --color-text-primary:   15 23 42;     /* #0f172a — near-black */
+  --color-text-secondary: 71 85 105;    /* #475569 — medium grey */
+  --color-text-muted:     148 163 184;  /* #94a3b8 — light grey */
+  --color-text-link:      29 111 239;   /* #1d6fef — brand blue */
+
+  /* Borders */
+  --color-border-default: 209 218 230;  /* #d1dae6 — soft grey */
+  --color-border-subtle:  232 237 243;  /* #e8edf3 — very light */
+  --color-border-active:  29 111 239;   /* #1d6fef — focused/active */
+
+  /* Semantic status — slightly darker for contrast on white */
+  --color-status-clean:   22 163 74;    /* #16a34a — green */
+  --color-status-rebuilt: 217 119 6;    /* #d97706 — amber */
+  --color-status-salvage: 220 38 38;    /* #dc2626 — red */
+  --color-status-live:    22 163 74;    /* #16a34a */
+  --color-status-ended:   148 163 184;  /* #94a3b8 */
+  --color-status-upcoming:29 111 239;   /* #1d6fef */
+
+  /* Condition grade colors */
+  --color-condition-excellent: 22 163 74;    /* #16a34a */
+  --color-condition-good:      101 163 13;   /* #65a30d */
+  --color-condition-fair:      217 119 6;    /* #d97706 */
+  --color-condition-poor:      220 38 38;    /* #dc2626 */
+
+  /* Interactive */
+  --color-focus-ring: 29 111 239;
+}
+
 @layer base {
   body {
-    @apply bg-slate-900 text-slate-100 font-sans;
+    background-color: rgb(var(--color-bg-page));
+    color: rgb(var(--color-text-primary));
+    @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .shadow-card {
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.05);
+  }
+  .shadow-card-hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.08);
+  }
+  .shadow-dropdown {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.08);
   }
 }

@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import type { SetStateAction } from 'react';
 import type { Filters } from '../../hooks/useInventory';
 import { formatCurrency } from '../../utils/format';
+import { STRINGS } from '../../config/strings';
 
 interface FilterChipsProps {
   filters: Filters;
@@ -47,17 +48,17 @@ export function FilterChips({ filters, setFilters, activeFilterCount, resetFilte
     chips.push({ label: `Condition ≥ ${filters.conditionMin}`, onRemove: () => setFilters((p) => ({ ...p, conditionMin: null })) });
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto scrollbar-none border-b border-slate-700">
+    <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto scrollbar-none border-b border-border-default">
       {chips.map((chip) => (
         <span
           key={chip.label}
-          className="flex items-center gap-1 shrink-0 px-2.5 py-1 rounded-full bg-slate-700 text-slate-200 text-xs font-medium"
+          className="flex items-center gap-1 shrink-0 px-2.5 py-1 rounded-full bg-bg-elevated text-text-primary text-xs font-medium"
         >
           {chip.label}
           <button
             onClick={chip.onRemove}
-            aria-label={`Remove ${chip.label} filter`}
-            className="ml-0.5 text-slate-400 hover:text-white transition-colors"
+            aria-label={STRINGS.chips.removeAriaLabel(chip.label)}
+            className="ml-0.5 text-text-secondary hover:text-text-primary transition-colors"
           >
             <X size={12} aria-hidden="true" />
           </button>
@@ -67,9 +68,9 @@ export function FilterChips({ filters, setFilters, activeFilterCount, resetFilte
       {chips.length >= 2 && (
         <button
           onClick={resetFilters}
-          className="shrink-0 px-2.5 py-1 rounded-full bg-orange-600 hover:bg-orange-500 text-white text-xs font-medium transition-colors"
+          className="shrink-0 px-2.5 py-1 rounded-full bg-brand hover:bg-brand-hover text-text-primary text-xs font-medium transition-colors"
         >
-          Clear all
+          {STRINGS.filters.clearAll}
         </button>
       )}
     </div>

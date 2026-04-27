@@ -1,63 +1,71 @@
-import { useRef, useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { useFilterContext } from '../../context/FilterContext';
+import { FilterBar } from '../filters/FilterBar';
+import { ActiveFilterChips } from '../filters/ActiveFilterChips';
+import { STRINGS } from '../../config/strings';
 
-interface HeaderProps {
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-}
+export function Header() {
+  const {
+    searchQuery,
+    setSearchQuery,
+    filters,
+    setFilters,
+    sortBy,
+    setSortBy,
+    activeFilterCount,
+    resetFilters,
+    availableOptions,
+  } = useFilterContext();
 
-export function Header({ searchQuery, onSearchChange }: HeaderProps) {
-  const [inputValue, setInputValue] = useState(searchQuery);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    setInputValue(searchQuery);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = e.target.value;
-    setInputValue(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => onSearchChange(val), 300);
-  }
+  const showChips = activeFilterCount > 0 || sortBy !== 'auction_start';
 
   return (
-    <header className="sticky top-0 z-50 h-16 bg-slate-900 border-b border-slate-700 flex items-center px-4 gap-4">
-      <div className="flex items-center gap-1 shrink-0">
-        <span className="text-xl font-bold tracking-tight text-white">THE BLOCK</span>
-        <span className="w-2 h-2 rounded-full bg-orange-500 mb-3" aria-hidden="true" />
-      </div>
-
-      <div className="flex-1 max-w-xl mx-auto">
-        <label htmlFor="global-search" className="sr-only">
-          Search make, model, VIN
-        </label>
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-            size={16}
-            aria-hidden="true"
-          />
-          <input
-            id="global-search"
-            type="search"
-            value={inputValue}
-            onChange={handleChange}
-            placeholder="Search make, model, VIN…"
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          />
+    <header className="sticky top-0 z-50 bg-bg-surface border-b border-border-default shrink-0">
+      {/* Row 1: Logo + Avatar */}
+      <div className="flex items-center justify-between px-6 h-14">
+        <div className="flex items-center gap-1">
+          <span className="text-xl font-bold tracking-tight text-text-primary">
+            {STRINGS.app.name}
+          </span>
+          <span className="w-2 h-2 rounded-full bg-brand mb-3" aria-hidden="true" />
+        </div>
+        <div
+          className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center"
+          aria-label={STRINGS.app.avatarAriaLabel}
+        >
+          <span className="text-xs font-semibold text-text-secondary">
+            {STRINGS.app.avatarInitials}
+          </span>
         </div>
       </div>
 
-      <div className="shrink-0 w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center" aria-label="Account">
-        <span className="text-xs font-semibold text-slate-300">TB</span>
+      {/* Row 2: Filter bar */}
+      <div className="px-6 pb-3 pt-1">
+        <FilterBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          filters={filters}
+          setFilters={setFilters}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          activeFilterCount={activeFilterCount}
+          resetFilters={resetFilters}
+          availableOptions={availableOptions}
+        />
       </div>
+
+      {/* Row 3: Active filter chips (conditional) */}
+      {showChips && (
+        <div className="px-6 pb-2">
+          <ActiveFilterChips
+            filters={filters}
+            setFilters={setFilters}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            activeFilterCount={activeFilterCount}
+            resetFilters={resetFilters}
+          />
+        </div>
+      )}
     </header>
   );
 }
