@@ -89,16 +89,15 @@ export function useInventory(allVehicles: Vehicle[]): UseInventoryReturn {
 
   const availableOptions = useMemo<AvailableOptions>(
     () => ({
-      makes:      [...new Set(allVehicles.map((v) => v.make))].sort(),
+      makes:       [...new Set(allVehicles.map((v) => v.make))].sort(),
       body_styles: [...new Set(allVehicles.map((v) => v.body_style))].sort(),
-      provinces:  [...new Set(allVehicles.map((v) => v.province))].sort(),
+      provinces:   [...new Set(allVehicles.map((v) => v.province))].sort(),
     }),
     [allVehicles],
   );
 
-  // Top-level view filter applied before all other filters
   const viewFiltered = useMemo(() => {
-    if (viewMode === 'all')   return allVehicles;
+    if (viewMode === 'all')   { const wonIds = new Set(getWonVehicles()); return allVehicles.filter((v) => !wonIds.has(v.id)); }
     if (viewMode === 'bids')  { const ids = new Set(getBiddedVehicles()); return allVehicles.filter((v) => ids.has(v.id)); }
     if (viewMode === 'won')   { const ids = new Set(getWonVehicles());    return allVehicles.filter((v) => ids.has(v.id)); }
     if (viewMode === 'liked') { const ids = new Set(getLikedIds());       return allVehicles.filter((v) => ids.has(v.id)); }
