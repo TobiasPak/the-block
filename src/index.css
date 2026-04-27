@@ -45,6 +45,9 @@
 
   /* Interactive */
   --color-focus-ring: 29 111 239;
+
+  /* Layout */
+  --header-height: 104px;
 }
 
 @layer base {
@@ -53,6 +56,20 @@
     color: rgb(var(--color-text-primary));
     @apply font-sans;
   }
+}
+
+@keyframes draw-check {
+  to { stroke-dashoffset: 0; }
+}
+.animate-draw-circle {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw-check 0.4s ease-out 0s forwards;
+}
+.animate-draw-tick {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw-check 0.3s ease-out 0.35s forwards;
 }
 
 @layer utilities {

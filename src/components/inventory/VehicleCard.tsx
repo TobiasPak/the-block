@@ -1,8 +1,10 @@
 import { memo } from 'react';
-import { Link } from 'react-router-dom';
 import type { Vehicle } from '../../types/vehicle';
 import { formatCurrency, formatOdometer, normalizeAuctionStart } from '../../utils/format';
 import { useCountdown } from '../../hooks/useCountdown';
+import { useDrawer } from '../../context/DrawerContext';
+import { useBidStore } from '../../store/useBidStore';
+import { LikeButton } from './LikeButton';
 import { STRINGS } from '../../config/strings';
 import { THEME } from '../../config/theme';
 
@@ -30,14 +32,36 @@ interface VehicleCardProps {
 }
 
 export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardProps) {
-  const bidLabel = vehicle.current_bid !== null ? STRINGS.vehicle.currentBid : STRINGS.vehicle.startingAt;
-  const bidValue = vehicle.current_bid ?? vehicle.starting_bid;
+  const { openDrawer } = useDrawer();
+  const { getBidEntry } = useBidStore();
+
+  const entry = getBidEntry(vehicle.id);
+  const displayBid  = entry?.currentBid ?? vehicle.current_bid ?? vehicle.starting_bid;
+  const bidCount    = entry?.bidCount   ?? vehicle.bid_count;
+  const isWinning   = entry?.status === 'winning';
+  const bidLabel    = (entry?.currentBid ?? vehicle.current_bid) !== null
+    ? STRINGS.vehicle.currentBid
+    : STRINGS.vehicle.startingAt;
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openDrawer(vehicle);
+    }
+  }
 
   return (
-    <Link
-      to={`/vehicles/${vehicle.id}`}
-      className="group block bg-bg-surface border border-border-subtle rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-200 cursor-pointer"
-      aria-label={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+    <div
+      onClick={() => openDrawer(vehicle)}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`${STRINGS.drawer.viewDetails}: ${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+      className={`group bg-bg-surface border rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+        isWinning
+          ? 'border-status-clean/40 ring-1 ring-status-clean/20'
+          : 'border-border-subtle'
+      }`}
     >
       {/* Image */}
       <div className="relative aspect-video bg-bg-elevated overflow-hidden">
@@ -67,13 +91,18 @@ export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardPro
       </div>
 
       {/* Body */}
-      <div className="p-3 space-y-1">
-        <h3 className="font-semibold text-text-primary text-sm leading-tight truncate">
-          {vehicle.year} {vehicle.make} {vehicle.model} {vehicle.trim}
-        </h3>
-        <p className="text-xs text-text-secondary truncate capitalize">
-          {formatOdometer(vehicle.odometer_km)} · {vehicle.body_style} · {vehicle.fuel_type}
-        </p>
+      <div className="p-3">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-text-primary text-sm leading-tight truncate">
+              {vehicle.year} {vehicle.make} {vehicle.model} {vehicle.trim}
+            </h3>
+            <p className="text-xs text-text-secondary truncate capitalize mt-0.5">
+              {formatOdometer(vehicle.odometer_km)} · {vehicle.body_style} · {vehicle.fuel_type}
+            </p>
+          </div>
+          <LikeButton vehicleId={vehicle.id} className="flex-shrink-0 mt-0.5" />
+        </div>
         <p className={`text-xs font-medium ${THEME.conditionColor(vehicle.condition_grade)}`}>
           {STRINGS.vehicle.condition(vehicle.condition_grade)}
         </p>
@@ -81,15 +110,24 @@ export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardPro
 
       {/* Footer */}
       <div className="px-3 pb-3 pt-2 border-t border-border-default flex items-end justify-between gap-2">
-        <div>
-          <p className="text-[10px] text-text-muted tracking-wide">{bidLabel}</p>
-          <p className="text-base font-bold text-text-primary">{formatCurrency(bidValue)}</p>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] text-text-muted tracking-wide">{bidLabel}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold text-text-primary leading-none">
+              {formatCurrency(displayBid)}
+            </span>
+            {isWinning && (
+              <span className="text-[11px] font-bold uppercase tracking-wider text-status-clean leading-none pb-0.5">
+                {STRINGS.bidding.winning}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] text-text-muted">{STRINGS.vehicle.bids(vehicle.bid_count)}</p>
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="text-[10px] text-text-muted">{STRINGS.vehicle.bids(bidCount)}</span>
           <CountdownBadge auctionStart={vehicle.auction_start} />
         </div>
       </div>
-    </Link>
+    </div>
   );
 });

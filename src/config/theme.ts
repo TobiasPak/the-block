@@ -15,4 +15,11 @@ export const THEME = {
     if (grade >= 2.0) return 'text-condition-fair';
     return 'text-condition-poor';
   },
+
+  conditionLabel: (grade: number): string => {
+    if (grade >= 4.5) return 'Excellent';
+    if (grade >= 3.5) return 'Good';
+    if (grade >= 2.5) return 'Fair';
+    return 'Poor';
+  },
 } as const;

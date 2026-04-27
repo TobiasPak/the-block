@@ -51,5 +51,6 @@ export default {
       },
     },
   },
+  safelist: ['transition-[width]', 'w-[440px]'],
   plugins: [],
 }

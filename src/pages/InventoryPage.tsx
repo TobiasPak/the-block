@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { FilterProvider } from '../context/FilterContext';
 import { Header } from '../components/layout/Header';
 import { VehicleGrid } from '../components/inventory/VehicleGrid';
+import { VehicleDrawer } from '../components/drawer/VehicleDrawer';
 import { ScrollToTopButton } from '../components/ui/ScrollToTopButton';
 import { useInventory } from '../hooks/useInventory';
 import { vehicles } from '../data/vehicles';
@@ -14,9 +15,12 @@ export function InventoryPage() {
     <FilterProvider value={inventory}>
       <div className="flex flex-col h-screen bg-bg-page">
         <Header />
-        <main ref={mainRef} className="flex-1 overflow-y-auto px-6 py-4">
-          <VehicleGrid results={inventory.results} />
-        </main>
+        <div className="flex flex-1 overflow-hidden">
+          <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto px-6 py-4">
+            <VehicleGrid results={inventory.results} />
+          </main>
+          <VehicleDrawer />
+        </div>
         <ScrollToTopButton scrollRef={mainRef} />
       </div>
     </FilterProvider>
