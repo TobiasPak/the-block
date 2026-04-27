@@ -103,7 +103,7 @@ export function BidPanel({ vehicle, onClose, initialStep = 'select', initialAmou
   }
 
   return (
-    <div className="h-full bg-bg-surface flex flex-col">
+    <div className="h-full bg-bg-surface flex flex-col overflow-y-auto">
 
       {/* ── Success ─────────────────────────────────────────────────────── */}
       {step === 'success' && (

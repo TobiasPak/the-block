@@ -55,6 +55,27 @@
     background-color: rgb(var(--color-bg-page));
     color: rgb(var(--color-text-primary));
     @apply font-sans;
+    /* Remove tap flash on iOS */
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent font inflation on device rotation */
+    -webkit-text-size-adjust: 100%;
+    /* Prevent horizontal scroll */
+    overflow-x: hidden;
+  }
+
+  /* Allow momentum scrolling on iOS */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Safe-area bottom padding (iPhone home bar) */
+.pb-safe {
+  padding-bottom: 1rem;
+}
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import type { Vehicle } from '../../types/vehicle';
 import { formatOdometer } from '../../utils/format';
 import { useDrawer } from '../../context/DrawerContext';
 import { DrawerPhotoGallery } from './DrawerPhotoGallery';
@@ -14,6 +15,12 @@ export function VehicleDrawer() {
   const { selectedVehicle, closeDrawer } = useDrawer();
   const isOpen = selectedVehicle !== null;
   const [showBidPanel, setShowBidPanel] = useState(false);
+
+  // Keep rendered vehicle in state so content stays visible during close animation
+  const [renderedVehicle, setRenderedVehicle] = useState<Vehicle | null>(null);
+  useEffect(() => {
+    if (selectedVehicle) setRenderedVehicle(selectedVehicle);
+  }, [selectedVehicle]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -32,41 +39,58 @@ export function VehicleDrawer() {
 
   return (
     <div
-      className={`flex-shrink-0 overflow-hidden bg-bg-surface border-l border-border-default transition-[width] duration-300 ease-out ${isOpen ? 'w-[440px]' : 'w-0'}`}
+      className={`
+        fixed inset-0 z-50
+        md:relative md:inset-auto
+        md:flex-shrink-0 md:overflow-hidden
+        md:border-l md:border-border-default
+        bg-bg-surface
+        transition-transform duration-300 ease-out
+        md:transition-[width] md:duration-300 md:ease-out
+        ${isOpen
+          ? 'translate-y-0 md:w-[440px]'
+          : 'translate-y-full md:translate-y-0 md:w-0'
+        }
+      `}
     >
-      {isOpen && selectedVehicle && (
-        <div className="w-[440px] h-full flex flex-col relative">
+      {renderedVehicle && (
+        <div className="w-full md:w-[440px] h-full flex flex-col relative">
+          {/* Mobile drag handle */}
+          <div className="flex justify-center pt-3 pb-1 md:hidden">
+            <div className="w-10 h-1 rounded-full bg-border-default" />
+          </div>
+
           <button
             onClick={closeDrawer}
             aria-label={STRINGS.drawer.close}
-            className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-bg-elevated border border-border-default text-text-secondary hover:text-text-primary transition-colors"
+            className="absolute top-3 right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-bg-elevated border border-border-default text-text-secondary hover:text-text-primary active:opacity-70 transition-colors md:top-3 md:right-3"
           >
             <X size={16} aria-hidden="true" />
           </button>
 
           <DrawerPhotoGallery
-            images={selectedVehicle.images}
-            vehicleName={`${selectedVehicle.year} ${selectedVehicle.make} ${selectedVehicle.model}`}
+            images={renderedVehicle.images}
+            vehicleName={`${renderedVehicle.year} ${renderedVehicle.make} ${renderedVehicle.model}`}
           />
 
           <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-6 min-h-0">
             <div>
               <h2 className="text-lg font-bold text-text-primary leading-tight">
-                {selectedVehicle.year} {selectedVehicle.make} {selectedVehicle.model}{' '}
-                {selectedVehicle.trim}
+                {renderedVehicle.year} {renderedVehicle.make} {renderedVehicle.model}{' '}
+                {renderedVehicle.trim}
               </h2>
               <p className="text-sm text-text-secondary mt-0.5 capitalize">
-                {formatOdometer(selectedVehicle.odometer_km)} · {selectedVehicle.body_style} ·{' '}
-                {selectedVehicle.fuel_type}
+                {formatOdometer(renderedVehicle.odometer_km)} · {renderedVehicle.body_style} ·{' '}
+                {renderedVehicle.fuel_type}
               </p>
             </div>
-            <DrawerSpecsGrid vehicle={selectedVehicle} />
-            <DrawerConditionSection vehicle={selectedVehicle} />
-            <DrawerDealerSection vehicle={selectedVehicle} />
+            <DrawerSpecsGrid vehicle={renderedVehicle} />
+            <DrawerConditionSection vehicle={renderedVehicle} />
+            <DrawerDealerSection vehicle={renderedVehicle} />
           </div>
 
           <DrawerAuctionSection
-            vehicle={selectedVehicle}
+            vehicle={renderedVehicle}
             onPlaceBid={() => setShowBidPanel(true)}
           />
 
@@ -76,9 +100,9 @@ export function VehicleDrawer() {
             aria-hidden={!showBidPanel}
           >
             {showBidPanel && (
-              <div className="flex-1 flex flex-col px-4 py-5 min-h-0">
+              <div className="flex-1 flex flex-col min-h-0">
                 <BidPanel
-                  vehicle={selectedVehicle}
+                  vehicle={renderedVehicle}
                   onClose={() => setShowBidPanel(false)}
                 />
               </div>

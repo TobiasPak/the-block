@@ -131,7 +131,7 @@ export function DrawerAuctionSection({ vehicle, onPlaceBid }: DrawerAuctionSecti
       <div className="relative overflow-hidden">
 
         {/* Layer A — full footer content, slides up and out when confirm is open */}
-        <div className={`px-4 py-4 flex flex-col gap-3 transition-transform duration-250 ease-out ${showBuyNowConfirm ? '-translate-y-full' : 'translate-y-0'}`}>
+        <div className={`px-4 pt-4 pb-safe flex flex-col gap-3 transition-transform duration-250 ease-out ${showBuyNowConfirm ? '-translate-y-full' : 'translate-y-0'}`}>
           {/* Bid info row */}
           <div className="flex items-start justify-between">
             <div className="flex flex-col gap-1">
@@ -207,7 +207,7 @@ export function DrawerAuctionSection({ vehicle, onPlaceBid }: DrawerAuctionSecti
         </div>
 
         {/* Layer B — confirm panel, slides up into view from below */}
-        <div className={`absolute inset-0 px-4 py-4 transition-transform duration-250 ease-out ${showBuyNowConfirm ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div className={`absolute inset-0 px-4 pt-4 pb-safe transition-transform duration-250 ease-out ${showBuyNowConfirm ? 'translate-y-0' : 'translate-y-full'}`}>
           <BuyNowConfirmPanel
             vehicle={vehicle}
             entry={entry}

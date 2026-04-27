@@ -49,6 +49,7 @@ export function FilterDropdown({
         absolute top-full mt-2 z-50
         ${align === 'right' ? 'right-0' : 'left-0'}
         ${width}
+        max-w-[calc(100vw-2rem)]
         bg-bg-surface border border-border-default rounded-xl shadow-dropdown
       `}
     >

@@ -16,7 +16,7 @@ export function InventoryPage() {
       <div className="flex flex-col h-screen bg-bg-page">
         <Header />
         <div className="flex flex-1 overflow-hidden">
-          <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto px-6 py-4">
+          <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto px-3 py-3 md:px-6 md:py-4">
             <VehicleGrid results={inventory.results} />
           </main>
           <VehicleDrawer />

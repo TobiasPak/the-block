@@ -19,7 +19,7 @@ export const LikeButton = memo(function LikeButton({ vehicleId, className }: Lik
         toggleLike(vehicleId);
       }}
       aria-label={liked ? STRINGS.likes.unlike : STRINGS.likes.like}
-      className={`flex items-center justify-center transition-colors duration-150 ${
+      className={`w-11 h-11 flex items-center justify-center -mr-2 -mt-1 transition-colors duration-150 active:scale-90 ${
         liked ? 'text-red-500 hover:text-red-400' : 'text-text-muted hover:text-red-400'
       } ${className ?? ''}`}
     >

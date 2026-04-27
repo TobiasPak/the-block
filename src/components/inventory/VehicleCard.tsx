@@ -60,7 +60,7 @@ export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardPro
       role="button"
       tabIndex={0}
       aria-label={`${STRINGS.drawer.viewDetails}: ${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-      className={`group bg-bg-surface border rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+      className={`group bg-bg-surface border rounded-xl overflow-hidden shadow-card hover:shadow-card-hover active:scale-[0.98] transition-[shadow,transform] duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-brand ${
         isWinning
           ? 'border-status-clean/40 ring-1 ring-status-clean/20'
           : 'border-border-subtle'
