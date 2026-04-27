@@ -9,7 +9,7 @@ interface UseVirtualScrollOptions {
 
 export interface UseVirtualScrollReturn {
   visibleCount: number;
-  sentinelRef: React.RefObject<HTMLDivElement>;
+  sentinelRef: React.RefObject<HTMLDivElement | null>;
   isLoadingMore: boolean;
   hasMore: boolean;
   reset: () => void;

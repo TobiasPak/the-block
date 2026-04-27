@@ -3,9 +3,10 @@ interface BidIncrementButtonProps {
   amount: number;
   isSelected: boolean;
   onClick: (amount: number) => void;
+  className?: string;
 }
 
-export function BidIncrementButton({ label, amount, isSelected, onClick }: BidIncrementButtonProps) {
+export function BidIncrementButton({ label, amount, isSelected, onClick, className = '' }: BidIncrementButtonProps) {
   return (
     <button
       type="button"
@@ -14,7 +15,7 @@ export function BidIncrementButton({ label, amount, isSelected, onClick }: BidIn
         isSelected
           ? 'bg-brand-subtle border border-brand text-brand font-medium'
           : 'bg-bg-elevated border border-border-default text-text-secondary hover:border-brand hover:text-brand'
-      }`}
+      } ${className}`}
     >
       {label}
     </button>

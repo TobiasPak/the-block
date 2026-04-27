@@ -94,6 +94,7 @@ export const STRINGS = {
     raiseBid:             'Raise Bid',
     reviewBid:            'Review Bid',
     confirmBid:           'Confirm Bid',
+    back:                 'Back',
     continueBrowsing:     'Continue Browsing',
     currentBid:           'Current Bid',
     yourBid:              'Your Bid',

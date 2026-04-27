@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { formatOdometer } from '../../utils/format';
 import { useDrawer } from '../../context/DrawerContext';
-import { useBidStore } from '../../store/useBidStore';
 import { DrawerPhotoGallery } from './DrawerPhotoGallery';
 import { DrawerSpecsGrid } from './DrawerSpecsGrid';
 import { DrawerConditionSection } from './DrawerConditionSection';
@@ -13,32 +12,23 @@ import { STRINGS } from '../../config/strings';
 
 export function VehicleDrawer() {
   const { selectedVehicle, closeDrawer } = useDrawer();
-  const { getBidEntry } = useBidStore();
   const isOpen = selectedVehicle !== null;
-
-  const [bidPanelOpen, setBidPanelOpen] = useState(false);
-  const [bidPanelInitialStep, setBidPanelInitialStep] = useState<'select' | 'success'>('select');
-  const [bidPanelInitialAmount, setBidPanelInitialAmount] = useState<number | undefined>(undefined);
-
-  useEffect(() => {
-    setBidPanelOpen(false);
-  }, [selectedVehicle?.id]);
+  const [showBidPanel, setShowBidPanel] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (bidPanelOpen) setBidPanelOpen(false);
-      else closeDrawer();
+      if (e.key === 'Escape') {
+        if (showBidPanel) setShowBidPanel(false);
+        else closeDrawer();
+      }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [closeDrawer, bidPanelOpen]);
+  }, [closeDrawer, showBidPanel]);
 
-  function handlePlaceBid() {
-    setBidPanelInitialStep('select');
-    setBidPanelInitialAmount(undefined);
-    setBidPanelOpen(true);
-  }
+  useEffect(() => {
+    setShowBidPanel(false);
+  }, [selectedVehicle?.id]);
 
   return (
     <div
@@ -77,20 +67,21 @@ export function VehicleDrawer() {
 
           <DrawerAuctionSection
             vehicle={selectedVehicle}
-            onPlaceBid={handlePlaceBid}
+            onPlaceBid={() => setShowBidPanel(true)}
           />
 
+          {/* Bid panel overlay — slides up from bottom */}
           <div
-            className={`absolute inset-0 bg-bg-surface z-20 flex flex-col transition-transform duration-300 ease-out ${bidPanelOpen ? 'translate-y-0' : 'translate-y-full'}`}
-            aria-hidden={!bidPanelOpen}
+            className={`absolute inset-0 bg-bg-surface flex flex-col transition-transform duration-300 ease-out ${showBidPanel ? 'translate-y-0' : 'translate-y-full'}`}
+            aria-hidden={!showBidPanel}
           >
-            {bidPanelOpen && (
-              <BidPanel
-                vehicle={selectedVehicle}
-                onClose={() => setBidPanelOpen(false)}
-                initialStep={bidPanelInitialStep}
-                initialAmount={bidPanelInitialAmount}
-              />
+            {showBidPanel && (
+              <div className="flex-1 flex flex-col px-4 py-5 min-h-0">
+                <BidPanel
+                  vehicle={selectedVehicle}
+                  onClose={() => setShowBidPanel(false)}
+                />
+              </div>
             )}
           </div>
         </div>

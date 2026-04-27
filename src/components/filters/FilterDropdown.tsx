@@ -4,7 +4,7 @@ import type { ReactNode, RefObject } from 'react';
 interface FilterDropdownProps {
   isOpen: boolean;
   onClose: () => void;
-  containerRef: RefObject<HTMLDivElement>;
+  containerRef: RefObject<HTMLDivElement | null>;
   children: ReactNode;
   width?: string;
   align?: 'left' | 'right';

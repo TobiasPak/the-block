@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import type { Vehicle } from '../../types/vehicle';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, normalizeAuctionStart } from '../../utils/format';
+import { useCountdown } from '../../hooks/useCountdown';
 import { useBidStore, getMinimumBid, minimumIncrement } from '../../store/useBidStore';
 import { BidIncrementButton } from './BidIncrementButton';
 import { BidErrorBanner } from './BidErrorBanner';
-import { BidConfirmStep } from './BidConfirmStep';
 import { BidSuccessState } from './BidSuccessState';
 import { STRINGS } from '../../config/strings';
 
@@ -18,14 +18,23 @@ interface BidPanelProps {
   initialAmount?: number;
 }
 
+function BidCountdown({ auctionStart }: { auctionStart: string }) {
+  const target = normalizeAuctionStart(auctionStart);
+  const { days, hours, minutes, seconds, isExpired } = useCountdown(target);
+  if (isExpired) return <span className="text-card-meta text-text-muted">{STRINGS.vehicle.ended}</span>;
+  const urgency = days === 0 && hours < 1 ? 'text-status-salvage' : days === 0 ? 'text-status-rebuilt' : 'text-text-secondary';
+  const label = days > 0 ? `${days}d ${hours}h` : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${seconds}s`;
+  return <span className={`text-card-meta font-medium tabular-nums ${urgency}`}>{label}</span>;
+}
+
 function buildIncrements(currentBid: number | null, startingBid: number) {
-  const base = currentBid ?? startingBid;
-  const inc  = minimumIncrement(base);
+  const base   = currentBid ?? startingBid;
+  const inc    = minimumIncrement(base);
   const minBid = getMinimumBid(currentBid, startingBid);
   return [
-    { amount: minBid,              label: STRINGS.bidding.incrementLabel(formatCurrency(inc)) },
-    { amount: minBid + inc * 2,    label: STRINGS.bidding.incrementLabel(formatCurrency(inc * 3)) },
-    { amount: minBid + inc * 4,    label: STRINGS.bidding.incrementLabel(formatCurrency(inc * 5)) },
+    { amount: minBid,           label: STRINGS.bidding.incrementLabel(formatCurrency(inc)) },
+    { amount: minBid + inc * 2, label: STRINGS.bidding.incrementLabel(formatCurrency(inc * 3)) },
+    { amount: minBid + inc * 4, label: STRINGS.bidding.incrementLabel(formatCurrency(inc * 5)) },
   ];
 }
 
@@ -33,17 +42,18 @@ export function BidPanel({ vehicle, onClose, initialStep = 'select', initialAmou
   const { getBidEntry, placeBid } = useBidStore();
   const entry = getBidEntry(vehicle.id);
 
-  const currentBid = entry?.currentBid ?? vehicle.current_bid;
-  const baseBidCount = entry?.bidCount ?? vehicle.bid_count;
-  const minimumBid = getMinimumBid(currentBid, vehicle.starting_bid);
+  const currentBid   = entry?.currentBid ?? vehicle.current_bid;
+  const baseBidCount = entry?.bidCount   ?? vehicle.bid_count;
+  const minimumBid   = getMinimumBid(currentBid, vehicle.starting_bid);
+  const displayBid   = currentBid ?? vehicle.starting_bid;
+  const isStartingBid = currentBid === null;
 
-  const [step, setStep]           = useState<BidStep>(initialStep);
+  const [step, setStep]                     = useState<BidStep>(initialStep);
   const [selectedAmount, setSelectedAmount] = useState<number>(initialAmount ?? minimumBid);
   const [inputValue, setInputValue]         = useState<string>(String(initialAmount ?? minimumBid));
-  const [error, setError]         = useState<string | null>(null);
-  const [triedSubmit, setTriedSubmit] = useState(false);
+  const [error, setError]                   = useState<string | null>(null);
+  const [triedSubmit, setTriedSubmit]       = useState(false);
 
-  // Keep inputValue in sync when minimumBid changes (e.g. new vehicle)
   useEffect(() => {
     if (!initialAmount) {
       setSelectedAmount(minimumBid);
@@ -62,7 +72,7 @@ export function BidPanel({ vehicle, onClose, initialStep = 'select', initialAmou
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
     setInputValue(val);
-    setSelectedAmount(-1); // deselect all buttons
+    setSelectedAmount(-1);
     if (triedSubmit) {
       const n = parseFloat(val);
       if (!isNaN(n) && n >= minimumBid) setError(null);
@@ -70,10 +80,10 @@ export function BidPanel({ vehicle, onClose, initialStep = 'select', initialAmou
   }
 
   function validate(n: number): string | null {
-    if (isNaN(n) || n <= 0)            return STRINGS.bidding.errorInvalid;
-    if (n < minimumBid)                return STRINGS.bidding.errorTooLow(formatCurrency(minimumBid));
+    if (isNaN(n) || n <= 0)   return STRINGS.bidding.errorInvalid;
+    if (n < minimumBid)        return STRINGS.bidding.errorTooLow(formatCurrency(minimumBid));
     if (vehicle.buy_now_price !== null && n > vehicle.buy_now_price)
-                                       return STRINGS.bidding.errorExceedsBuyNow;
+                               return STRINGS.bidding.errorExceedsBuyNow;
     return null;
   }
 
@@ -92,107 +102,151 @@ export function BidPanel({ vehicle, onClose, initialStep = 'select', initialAmou
     setStep('success');
   }
 
-  if (step === 'success') {
-    return (
-      <BidSuccessState
-        vehicle={vehicle}
-        bidAmount={selectedAmount}
-        mode={initialStep === 'success' ? 'buynow' : 'bid'}
-        onClose={onClose}
-      />
-    );
-  }
-
-  if (step === 'confirm') {
-    return (
-      <BidConfirmStep
-        vehicle={vehicle}
-        bidAmount={selectedAmount}
-        currentBid={currentBid}
-        onBack={() => setStep('select')}
-        onConfirm={handleConfirm}
-      />
-    );
-  }
-
-  // Select step
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border-default">
-        <button
-          onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-bg-elevated transition-colors text-text-secondary hover:text-text-primary"
-          aria-label="Back"
-        >
-          <ChevronLeft size={18} aria-hidden="true" />
-        </button>
-        <span className="text-sm font-semibold text-text-primary">{STRINGS.bidding.placeBid}</span>
-      </div>
+    <div className="h-full bg-bg-surface flex flex-col">
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4 min-h-0">
-        {/* Current bid summary */}
-        <div className="bg-bg-elevated rounded-xl px-4 py-3">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs text-text-muted uppercase tracking-wide mb-0.5">
-                {STRINGS.bidding.currentBid}
-              </p>
-              <p className="text-2xl font-bold text-text-primary">
-                {formatCurrency(currentBid ?? vehicle.starting_bid)}
-              </p>
+      {/* ── Success ─────────────────────────────────────────────────────── */}
+      {step === 'success' && (
+        <BidSuccessState
+          vehicle={vehicle}
+          bidAmount={selectedAmount}
+          mode={initialStep === 'success' ? 'buynow' : 'bid'}
+          onClose={onClose}
+        />
+      )}
+
+      {/* ── Confirm ─────────────────────────────────────────────────────── */}
+      {step === 'confirm' && (
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-border-default">
+            <button
+              onClick={() => setStep('select')}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-bg-elevated transition-colors text-text-secondary hover:text-text-primary"
+              aria-label={STRINGS.bidding.back}
+            >
+              <ChevronLeft size={20} aria-hidden="true" />
+            </button>
+            <span className="text-sm font-semibold text-text-primary">{STRINGS.bidding.confirmBid}</span>
+          </div>
+
+          {/* Summary card */}
+          <div className="px-4 pt-4 flex flex-col gap-3">
+            <div className="bg-bg-elevated border border-border-default rounded-xl px-3 py-2.5 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-bid-label text-text-muted uppercase">{STRINGS.bidding.yourBid}</span>
+                <span className="text-bid-amount text-text-primary leading-none">{formatCurrency(selectedAmount)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-bid-label text-text-muted uppercase">{STRINGS.bidding.currentBid}</span>
+                <span className="text-card-meta text-text-secondary">{formatCurrency(displayBid)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-bid-label text-text-muted uppercase">{STRINGS.bidding.minimumBid}</span>
+                <span className="text-card-meta text-text-secondary">{formatCurrency(minimumBid)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-bid-label text-text-muted uppercase">{STRINGS.bidding.reserve}</span>
+                <span className="text-card-meta text-text-secondary">{STRINGS.bidding.reserveHidden}</span>
+              </div>
             </div>
-            <p className="text-sm text-text-secondary">{STRINGS.vehicle.bids(baseBidCount)}</p>
+
+            <p className="text-card-meta text-text-muted text-center px-2">{STRINGS.bidding.confirmTerms}</p>
           </div>
-          <p className="text-xs text-text-muted mt-1">
-            {STRINGS.bidding.minimumBid}: {formatCurrency(minimumBid)}
-          </p>
-        </div>
 
-        {/* Increment buttons */}
-        <div className="flex gap-2">
-          {increments.map((inc) => (
-            <BidIncrementButton
-              key={inc.amount}
-              label={inc.label}
-              amount={inc.amount}
-              isSelected={selectedAmount === inc.amount}
-              onClick={handleIncrementClick}
-            />
-          ))}
-        </div>
+          <div className="flex-1" />
 
-        {/* Custom amount input */}
-        <div>
-          <label htmlFor="bid-amount-input" className="text-xs text-text-muted uppercase tracking-wide block mb-1.5">
-            {STRINGS.bidding.yourBid}
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-muted">$</span>
-            <input
-              id="bid-amount-input"
-              type="number"
-              value={inputValue}
-              onChange={handleInputChange}
-              min={minimumBid}
-              className="w-full bg-bg-elevated border border-border-default rounded-lg pl-7 pr-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand"
-            />
+          {/* Confirm button */}
+          <div className="px-4 pb-4">
+            <button
+              onClick={handleConfirm}
+              className="w-full py-3 rounded-xl bg-brand hover:bg-brand-hover text-text-inverse text-base font-semibold transition-colors"
+            >
+              {STRINGS.bidding.confirmBid}
+            </button>
           </div>
         </div>
+      )}
 
-        <BidErrorBanner message={error} />
-      </div>
+      {/* ── Select ──────────────────────────────────────────────────────── */}
+      {step === 'select' && (
+        <div className="flex flex-col h-full">
+          {/* Header row */}
+          <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-border-default">
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-bg-elevated transition-colors text-text-secondary hover:text-text-primary"
+              aria-label={STRINGS.bidding.back}
+            >
+              <ChevronLeft size={20} aria-hidden="true" />
+            </button>
+            <span className="text-sm font-semibold text-text-primary">{STRINGS.bidding.placeBid}</span>
+          </div>
 
-      {/* Footer */}
-      <div className="px-4 py-4 border-t border-border-default">
-        <button
-          onClick={handleReviewBid}
-          className="w-full bg-brand hover:bg-brand-hover text-text-inverse font-semibold py-3 rounded-xl text-base transition-colors"
-        >
-          {STRINGS.bidding.reviewBid}
-        </button>
-      </div>
+          {/* Bid context */}
+          <div className="px-4 pt-4 pb-3 flex items-start justify-between">
+            <div className="flex flex-col gap-1">
+              <span className="text-bid-label text-text-muted uppercase">
+                {isStartingBid ? STRINGS.vehicle.startingAt : STRINGS.vehicle.currentBid}
+              </span>
+              <span className="text-bid-amount text-text-primary leading-none">
+                {formatCurrency(displayBid)}
+              </span>
+              <span className="text-card-meta text-text-muted mt-0.5">
+                {STRINGS.bidding.minimumBid}: {formatCurrency(minimumBid)}
+              </span>
+            </div>
+            <div className="flex flex-col items-end gap-0.5">
+              <span className="text-card-count text-text-muted">{STRINGS.vehicle.bids(baseBidCount)}</span>
+              <BidCountdown auctionStart={vehicle.auction_start} />
+            </div>
+          </div>
+
+          {/* Increment pills */}
+          <div className="px-4 pb-3 flex gap-2">
+            {increments.map((inc) => (
+              <BidIncrementButton
+                key={inc.amount}
+                label={inc.label}
+                amount={inc.amount}
+                isSelected={selectedAmount === inc.amount}
+                onClick={handleIncrementClick}
+                className="flex-1"
+              />
+            ))}
+          </div>
+
+          {/* Your Bid input */}
+          <div className="px-4 pb-3 flex flex-col gap-1.5">
+            <span className="text-bid-label text-text-muted uppercase">{STRINGS.bidding.yourBid}</span>
+            <div className="flex items-center gap-2 border border-border-default rounded-xl px-4 py-3 bg-bg-surface focus-within:border-border-active transition-colors">
+              <span className="text-text-muted text-sm font-medium select-none">$</span>
+              <input
+                type="number"
+                value={inputValue}
+                onChange={handleInputChange}
+                min={minimumBid}
+                aria-label={STRINGS.bidding.yourBid}
+                className="flex-1 bg-transparent text-text-primary text-sm font-semibold outline-none min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+            {error && <BidErrorBanner message={error} />}
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Review Bid button */}
+          <div className="px-4 pb-4">
+            <button
+              onClick={handleReviewBid}
+              className="w-full py-3 rounded-xl bg-brand hover:bg-brand-hover text-text-inverse text-base font-semibold transition-colors"
+            >
+              {STRINGS.bidding.reviewBid}
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
