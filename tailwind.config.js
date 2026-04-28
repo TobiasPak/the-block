@@ -57,7 +57,7 @@ export default {
     },
   },
   safelist: [
-    'transition-[width]', 'w-[440px]',
+    'transition-[width]', 'transition-[height]', 'w-[440px]',
     'text-bid-amount', 'text-bid-label', 'text-bid-winning', 'text-bid-dot',
     'text-drawer-bid-amount',
     'text-card-title', 'text-card-meta', 'text-card-label', 'text-card-count',

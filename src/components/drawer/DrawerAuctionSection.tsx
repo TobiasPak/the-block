@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CheckCircle } from 'lucide-react';
 import type { Vehicle } from '../../types/vehicle';
 import { formatCurrency, normalizeAuctionStart } from '../../utils/format';
 import { useCountdown } from '../../hooks/useCountdown';
 import { useBidStore } from '../../store/useBidStore';
 import type { BidEntry } from '../../store/useBidStore';
+import { BidPanel } from '../bidding/BidPanel';
 import { STRINGS } from '../../config/strings';
+
+type ActiveLayer = 'normal' | 'buynow' | 'bid';
 
 function CountdownDisplay({ auctionStart }: { auctionStart: string }) {
   const target = normalizeAuctionStart(auctionStart);
@@ -39,7 +42,7 @@ function BuyNowConfirmPanel({ vehicle, entry, onConfirm, onCancel }: BuyNowConfi
   const bidCount      = entry?.bidCount ?? vehicle.bid_count;
 
   return (
-    <div className="flex flex-col gap-2.5 h-full justify-between">
+    <div className="flex flex-col gap-2.5">
       {/* Row 1: current bid context */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
@@ -78,13 +81,13 @@ function BuyNowConfirmPanel({ vehicle, entry, onConfirm, onCancel }: BuyNowConfi
       <div className="flex gap-2">
         <button
           onClick={onCancel}
-          className="flex-1 py-2.5 rounded-xl border border-border-default text-text-secondary hover:text-text-primary hover:border-border-active text-sm font-medium transition-colors"
+          className="flex-1 py-2.5 rounded-xl border border-border-default text-text-secondary hover:text-text-primary hover:border-border-active text-sm font-medium transition-colors active:opacity-70"
         >
           {STRINGS.bidding.cancel}
         </button>
         <button
           onClick={onConfirm}
-          className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-text-inverse text-sm font-semibold transition-colors"
+          className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-text-inverse text-sm font-semibold transition-colors active:opacity-70"
         >
           {STRINGS.bidding.confirmBuyNow}
         </button>
@@ -95,18 +98,38 @@ function BuyNowConfirmPanel({ vehicle, entry, onConfirm, onCancel }: BuyNowConfi
 
 interface DrawerAuctionSectionProps {
   vehicle: Vehicle;
-  onPlaceBid: () => void;
 }
 
-export function DrawerAuctionSection({ vehicle, onPlaceBid }: DrawerAuctionSectionProps) {
+export function DrawerAuctionSection({ vehicle }: DrawerAuctionSectionProps) {
   const { getBidEntry, buyNow } = useBidStore();
-  const [showBuyNowConfirm, setShowBuyNowConfirm] = useState(false);
+  const [activeLayer, setActiveLayer] = useState<ActiveLayer>('normal');
+
+  // Refs for measuring each layer's natural height
+  const layerARef = useRef<HTMLDivElement>(null);
+  const layerBRef = useRef<HTMLDivElement>(null);
+  const layerCRef = useRef<HTMLDivElement>(null);
+  const [containerHeight, setContainerHeight] = useState<number | 'auto'>('auto');
 
   const entry = getBidEntry(vehicle.id);
 
   useEffect(() => {
-    setShowBuyNowConfirm(false);
+    setActiveLayer('normal');
   }, [vehicle.id]);
+
+  // Seed height from Layer A on first render
+  useEffect(() => {
+    const h = layerARef.current?.scrollHeight;
+    if (h) setContainerHeight(h);
+  }, []);
+
+  // Update container height whenever the active layer changes
+  useEffect(() => {
+    const h =
+      activeLayer === 'normal'  ? layerARef.current?.scrollHeight :
+      activeLayer === 'buynow'  ? layerBRef.current?.scrollHeight :
+                                   layerCRef.current?.scrollHeight;
+    if (h) setContainerHeight(h);
+  }, [activeLayer]);
 
   const currentBid = entry?.currentBid ?? vehicle.current_bid;
   const bidCount   = entry?.bidCount   ?? vehicle.bid_count;
@@ -123,15 +146,22 @@ export function DrawerAuctionSection({ vehicle, onPlaceBid }: DrawerAuctionSecti
   function handleConfirmBuyNow() {
     if (!vehicle.buy_now_price) return;
     buyNow(vehicle.id, vehicle.buy_now_price, bidCount);
-    setShowBuyNowConfirm(false);
+    setActiveLayer('normal');
   }
 
   return (
     <div className="bg-bg-surface border-t border-border-default shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-      <div className="relative overflow-hidden">
+      {/* Clip container — no overflow-hidden; height animates to match active layer */}
+      <div
+        className="relative transition-[height] duration-250 ease-out"
+        style={{ height: containerHeight === 'auto' ? undefined : `${containerHeight}px` }}
+      >
 
-        {/* Layer A — full footer content, slides up and out when confirm is open */}
-        <div className={`px-4 pt-4 pb-safe flex flex-col gap-3 transition-transform duration-250 ease-out ${showBuyNowConfirm ? '-translate-y-full' : 'translate-y-0'}`}>
+        {/* Layer A — normal footer; slides down when sub-panel is active */}
+        <div
+          ref={layerARef}
+          className={`px-4 pt-4 pb-safe flex flex-col gap-3 transition-transform duration-250 ease-out ${activeLayer !== 'normal' ? 'translate-y-full' : 'translate-y-0'}`}
+        >
           {/* Bid info row */}
           <div className="flex items-start justify-between">
             <div className="flex flex-col gap-1">
@@ -187,8 +217,8 @@ export function DrawerAuctionSection({ vehicle, onPlaceBid }: DrawerAuctionSecti
           {/* Buy Now banner */}
           {vehicle.buy_now_price !== null && !isWon && (
             <button
-              onClick={() => setShowBuyNowConfirm(true)}
-              className="w-full flex items-center justify-between bg-brand-subtle border border-brand/30 rounded-xl px-4 py-3 hover:bg-brand-subtle/80 transition-colors cursor-pointer"
+              onClick={() => setActiveLayer('buynow')}
+              className="w-full flex items-center justify-between bg-brand-subtle border border-brand/30 rounded-xl px-4 py-3 hover:bg-brand-subtle/80 transition-colors cursor-pointer active:opacity-70"
             >
               <span className="text-sm font-medium text-brand">{STRINGS.drawer.buyNowAvailable}</span>
               <span className="text-sm font-bold text-brand">{formatCurrency(vehicle.buy_now_price)}</span>
@@ -198,22 +228,35 @@ export function DrawerAuctionSection({ vehicle, onPlaceBid }: DrawerAuctionSecti
           {/* Place / Raise Bid */}
           {!isWon && (
             <button
-              onClick={onPlaceBid}
-              className="w-full bg-brand hover:bg-brand-hover text-text-inverse font-semibold py-3 rounded-xl text-base transition-colors"
+              onClick={() => setActiveLayer('bid')}
+              className="w-full bg-brand hover:bg-brand-hover active:opacity-80 text-text-inverse font-semibold py-3 rounded-xl text-base transition-colors"
             >
               {isWinning ? STRINGS.bidding.raiseBid : STRINGS.bidding.placeBid}
             </button>
           )}
         </div>
 
-        {/* Layer B — confirm panel, slides up into view from below */}
-        <div className={`absolute inset-0 px-4 pt-4 pb-safe transition-transform duration-250 ease-out ${showBuyNowConfirm ? 'translate-y-0' : 'translate-y-full'}`}>
-          <BuyNowConfirmPanel
-            vehicle={vehicle}
-            entry={entry}
-            onConfirm={handleConfirmBuyNow}
-            onCancel={() => setShowBuyNowConfirm(false)}
-          />
+        {/* Layer B — buy now confirm; padding on inner wrapper so scrollHeight is accurate */}
+        <div className={`absolute bottom-0 left-0 right-0 bg-bg-surface transition-transform duration-250 ease-out ${activeLayer === 'buynow' ? 'translate-y-0' : 'translate-y-full'}`}>
+          <div ref={layerBRef} className="px-4 pt-4 pb-safe">
+            <BuyNowConfirmPanel
+              vehicle={vehicle}
+              entry={entry}
+              onConfirm={handleConfirmBuyNow}
+              onCancel={() => setActiveLayer('normal')}
+            />
+          </div>
+        </div>
+
+        {/* Layer C — bid panel; BidPanel carries its own px-4 py-4 */}
+        <div className={`absolute bottom-0 left-0 right-0 transition-transform duration-250 ease-out ${activeLayer === 'bid' ? 'translate-y-0' : 'translate-y-full'}`}>
+          <div ref={layerCRef}>
+            <BidPanel
+              vehicle={vehicle}
+              onClose={() => setActiveLayer('normal')}
+              isActive={activeLayer === 'bid'}
+            />
+          </div>
         </div>
 
       </div>

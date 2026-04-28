@@ -44,40 +44,83 @@ export function Header() {
     <>
       <header className="sticky top-0 z-40 bg-bg-surface border-b border-border-default shrink-0">
         {/* Row 1: Logo + right controls */}
-        <div className="flex items-center justify-between px-4 md:px-6 h-14">
+        <div className="flex items-center px-4 md:px-6 h-14 gap-2">
           {/* Logo */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <span className="text-xl font-bold tracking-tight text-text-primary">
               {STRINGS.app.name}
             </span>
             <span className="w-2 h-2 rounded-full bg-brand mb-3" aria-hidden="true" />
           </div>
 
-          {/* Right side */}
-          <div className="flex items-center gap-2">
-            {/* Mobile: filter trigger */}
+          <div className="flex-1" />
+
+          {/* Mobile: nav buttons + filter trigger + avatar */}
+          <div className="flex md:hidden items-center gap-1 min-h-0">
+            <NavIconButton
+              icon={<Gavel size={16} aria-hidden="true" />}
+              label={STRINGS.nav.bids}
+              badge={bidsCount}
+              isActive={viewMode === 'bids'}
+              onClick={() => toggleViewMode('bids')}
+            />
+            <NavIconButton
+              icon={<Trophy size={16} aria-hidden="true" />}
+              label={STRINGS.nav.won}
+              badge={wonCount}
+              isActive={viewMode === 'won'}
+              onClick={() => toggleViewMode('won')}
+            />
+            <NavIconButton
+              icon={<Heart size={16} aria-hidden="true" />}
+              label={STRINGS.nav.liked}
+              badge={likeCount}
+              isActive={viewMode === 'liked'}
+              onClick={() => toggleViewMode('liked')}
+            />
+
+            <div className="w-px h-4 bg-border-default mx-0.5" aria-hidden="true" />
+
+            <NavIconButton
+              icon={<LayoutGrid size={16} aria-hidden="true" />}
+              label={STRINGS.nav.allInventory}
+              isActive={viewMode === 'all'}
+              onClick={() => setViewMode('all')}
+            />
+
+            <div className="w-px h-4 bg-border-default mx-0.5" aria-hidden="true" />
+
             <button
               onClick={() => setMobileFilterOpen(true)}
               aria-label={STRINGS.filters.openAriaLabel}
-              className="relative md:hidden w-10 h-10 flex items-center justify-center rounded-xl border border-border-default text-text-secondary active:opacity-70"
+              className="relative w-8 h-8 flex items-center justify-center rounded-lg border border-border-default text-text-secondary active:opacity-70 transition-opacity"
             >
               <SlidersHorizontal size={16} aria-hidden="true" />
               {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-text-inverse text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-brand text-text-inverse text-[10px] font-bold leading-4 flex items-center justify-center">
                   {activeFilterCount > 9 ? '9+' : activeFilterCount}
                 </span>
               )}
             </button>
 
-            {/* Avatar */}
             <div
-              className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center"
+              className="w-8 h-8 rounded-full bg-brand flex items-center justify-center ml-1"
               aria-label={STRINGS.app.avatarAriaLabel}
             >
-              <span className="text-xs font-semibold text-text-secondary">
+              <span className="text-xs font-bold text-text-inverse">
                 {STRINGS.app.avatarInitials}
               </span>
             </div>
+          </div>
+
+          {/* Desktop: avatar only (nav buttons are in row 2) */}
+          <div
+            className="hidden md:flex w-8 h-8 rounded-full bg-bg-elevated items-center justify-center"
+            aria-label={STRINGS.app.avatarAriaLabel}
+          >
+            <span className="text-xs font-semibold text-text-secondary">
+              {STRINGS.app.avatarInitials}
+            </span>
           </div>
         </div>
 
