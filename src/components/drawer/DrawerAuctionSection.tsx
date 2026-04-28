@@ -109,12 +109,9 @@ export function DrawerAuctionSection({ vehicle }: DrawerAuctionSectionProps) {
   const layerBRef = useRef<HTMLDivElement>(null);
   const layerCRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState<number | 'auto'>('auto');
+  const [animateHeight, setAnimateHeight] = useState(false);
 
   const entry = getBidEntry(vehicle.id);
-
-  useEffect(() => {
-    setActiveLayer('normal');
-  }, [vehicle.id]);
 
   // Seed height from Layer A on first render
   useEffect(() => {
@@ -122,14 +119,33 @@ export function DrawerAuctionSection({ vehicle }: DrawerAuctionSectionProps) {
     if (h) setContainerHeight(h);
   }, []);
 
-  // Update container height whenever the active layer changes
+  // Vehicle change — instant reset of both layer and height (no animation)
   useEffect(() => {
-    const h =
-      activeLayer === 'normal'  ? layerARef.current?.scrollHeight :
-      activeLayer === 'buynow'  ? layerBRef.current?.scrollHeight :
-                                   layerCRef.current?.scrollHeight;
-    if (h) setContainerHeight(h);
-  }, [activeLayer]);
+    setAnimateHeight(false);
+    setActiveLayer('normal');
+    requestAnimationFrame(() => {
+      const h = layerARef.current?.scrollHeight;
+      if (h) setContainerHeight(h);
+    });
+  }, [vehicle.id]);
+
+  // Layer change — animate expansion, instant collapse
+  useEffect(() => {
+    if (activeLayer === 'normal') {
+      setAnimateHeight(false);
+      requestAnimationFrame(() => {
+        const h = layerARef.current?.scrollHeight;
+        if (h) setContainerHeight(h);
+      });
+    } else {
+      setAnimateHeight(true);
+      const ref = activeLayer === 'buynow' ? layerBRef : layerCRef;
+      requestAnimationFrame(() => {
+        const h = ref.current?.scrollHeight;
+        if (h) setContainerHeight(h);
+      });
+    }
+  }, [activeLayer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentBid = entry?.currentBid ?? vehicle.current_bid;
   const bidCount   = entry?.bidCount   ?? vehicle.bid_count;
@@ -151,9 +167,9 @@ export function DrawerAuctionSection({ vehicle }: DrawerAuctionSectionProps) {
 
   return (
     <div className="bg-bg-surface border-t border-border-default shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-      {/* Clip container — no overflow-hidden; height animates to match active layer */}
+      {/* Clip container — no overflow-hidden; height grows to match active layer */}
       <div
-        className="relative transition-[height] duration-250 ease-out"
+        className={`relative ${animateHeight ? 'transition-[height] duration-250 ease-out' : ''}`}
         style={{ height: containerHeight === 'auto' ? undefined : `${containerHeight}px` }}
       >
 
