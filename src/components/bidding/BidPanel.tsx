@@ -7,7 +7,7 @@ import { BidIncrementButton } from './BidIncrementButton';
 import { BidErrorBanner } from './BidErrorBanner';
 import { STRINGS } from '../../config/strings';
 
-type BidStep = 'select' | 'confirm';
+type BidStep = 'select' | 'confirm' | 'success';
 
 interface BidPanelProps {
   vehicle: Vehicle;
@@ -37,7 +37,7 @@ function buildIncrements(currentBid: number | null, startingBid: number) {
 }
 
 export function BidPanel({ vehicle, onClose, isActive, initialAmount }: BidPanelProps) {
-  const { getBidEntry, placeBid, auctionEnd } = useBidStore();
+  const { getBidEntry, placeBid } = useBidStore();
   const entry = getBidEntry(vehicle.id);
 
   const currentBid    = entry?.currentBid ?? vehicle.current_bid;
@@ -107,9 +107,7 @@ export function BidPanel({ vehicle, onClose, isActive, initialAmount }: BidPanel
 
   function handleConfirm() {
     placeBid(vehicle.id, selectedAmount, baseBidCount);
-    // Simulate auction end: check reserve after PLACE_BID has updated the store
-    setTimeout(() => auctionEnd(vehicle.id, vehicle.reserve_price), 0);
-    onClose();
+    setStep('success');
   }
 
   return (
@@ -258,6 +256,39 @@ export function BidPanel({ vehicle, onClose, isActive, initialAmount }: BidPanel
               {STRINGS.bidding.confirmBid}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── Success ─────────────────────────────────────────────────────── */}
+      {step === 'success' && (
+        <div className="flex flex-col items-center gap-3 py-2 text-center">
+          {/* Animated checkmark */}
+          <svg viewBox="0 0 64 64" className="w-14 h-14 text-status-clean" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="3" pathLength="100" className="animate-draw-circle" />
+            <path d="M20 33 L28 41 L44 25" stroke="currentColor" strokeWidth="3" pathLength="100" className="animate-draw-tick" />
+          </svg>
+
+          <div>
+            <p className="text-sm font-semibold text-text-primary">{STRINGS.bidding.bidPlaced}</p>
+            <p className="text-card-meta text-text-muted mt-0.5">
+              {vehicle.year} {vehicle.make} {vehicle.model}
+            </p>
+            <p className="text-xs font-medium text-status-clean mt-1">{STRINGS.bidding.currentlyWinning}</p>
+          </div>
+
+          <div className="w-full bg-bg-elevated border border-border-default rounded-xl px-3 py-2.5 text-left">
+            <div className="flex items-center justify-between">
+              <span className="text-bid-label text-text-muted uppercase tracking-wide">{STRINGS.bidding.yourBid}</span>
+              <span className="text-sm font-bold text-text-primary">{formatCurrency(selectedAmount)}</span>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-brand hover:bg-brand-hover active:opacity-70 text-text-inverse text-sm font-semibold transition-colors"
+          >
+            {STRINGS.bidding.continueBrowsing}
+          </button>
         </div>
       )}
 

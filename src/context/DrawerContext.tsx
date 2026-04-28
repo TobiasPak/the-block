@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { Vehicle } from '../types/vehicle';
+import { useNotificationStore } from '../store/useNotificationStore';
 
 interface DrawerContextValue {
   selectedVehicle: Vehicle | null;
@@ -12,10 +13,12 @@ const DrawerContext = createContext<DrawerContextValue | null>(null);
 
 export function DrawerProvider({ children }: { children: ReactNode }) {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const { closeSidebar } = useNotificationStore();
 
   const openDrawer = useCallback((vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
-  }, []);
+    closeSidebar(); // close notification sidebar when drawer opens
+  }, [closeSidebar]);
 
   const closeDrawer = useCallback(() => {
     setSelectedVehicle(null);

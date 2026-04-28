@@ -135,6 +135,7 @@ export function getMinimumBid(currentBid: number | null, startingBid: number): n
 // ── Context ─────────────────────────────────────────────────────────────────
 
 interface BidStoreContextValue {
+  bidEntries:        Record<string, BidEntry>;
   getBidEntry:       (vehicleId: string) => BidEntry | null;
   getBiddedVehicles: () => string[];
   getWonVehicles:    () => string[];
@@ -196,8 +197,8 @@ export function BidStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ getBidEntry, getBiddedVehicles, getWonVehicles, placeBid, auctionEnd, buyNow }),
-    [getBidEntry, getBiddedVehicles, getWonVehicles, placeBid, auctionEnd, buyNow],
+    () => ({ bidEntries: state.bids, getBidEntry, getBiddedVehicles, getWonVehicles, placeBid, auctionEnd, buyNow }),
+    [state.bids, getBidEntry, getBiddedVehicles, getWonVehicles, placeBid, auctionEnd, buyNow],
   );
 
   return React.createElement(BidStoreContext.Provider, { value }, children);

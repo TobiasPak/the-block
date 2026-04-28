@@ -4,10 +4,9 @@
 // while the dev server is running (localhost:5173)
 // ============================================================
 
-const store = window.__bidStore;
 const allVehicles = window.__vehicles;
 
-if (!store || !allVehicles) {
+if (!window.__bidStore || !allVehicles) {
   console.error('❌ Dev store not found. Make sure the app is running in dev mode.');
 } else {
   console.log('%c✅ The Block Dev Console loaded', 'color: #1d6fef; font-weight: bold; font-size: 14px');
@@ -15,6 +14,13 @@ if (!store || !allVehicles) {
 }
 
 // ─── Helpers ──────────────────────────────────────────────
+
+// Read store dynamically on every call — prevents stale reference after resetAll()
+function getStore() {
+  const s = window.__bidStore;
+  if (!s) { console.error('❌ Store not found. Is the app running?'); return null; }
+  return s;
+}
 
 function getVehicle(lotOrId) {
   return allVehicles.find(v =>
@@ -25,6 +31,8 @@ function getVehicle(lotOrId) {
 }
 
 function getActiveBids() {
+  const store = getStore();
+  if (!store) return [];
   const bids = store.getState().bids;
   return Object.entries(bids)
     .filter(([, e]) => e.status !== 'idle')
@@ -94,28 +102,23 @@ function search(query) {
 }
 
 /**
- * Place a bid on any vehicle and immediately end the auction (bypasses UI flow).
+ * Place a bid on any vehicle (bypasses UI flow). Status becomes 'winning'.
+ * Run endAuction() afterwards to resolve the auction.
  * @param {string} lotOrId  Lot number, vehicle ID, or partial name
  * @param {number} amount   Bid amount in dollars
  * @example placeBid('A-0009', 50000)
  */
 function placeBid(lotOrId, amount) {
+  const store = getStore();
+  if (!store) return;
   const v = getVehicle(lotOrId);
   if (!v) { console.error(`❌ Vehicle not found: ${lotOrId}`); return; }
   if (!amount || isNaN(amount)) { console.error('❌ Invalid amount. Usage: placeBid("A-0009", 25000)'); return; }
 
   store.dispatch({ type: 'PLACE_BID', vehicleId: v.id, amount });
-  store.dispatch({ type: 'AUCTION_END', vehicleId: v.id, reservePrice: v.reserve_price });
 
-  const meetsReserve = v.reserve_price == null || amount >= v.reserve_price;
-  if (meetsReserve) {
-    console.log(`%c🏆 WON: ${v.year} ${v.make} ${v.model} for ${fmt(amount)}`, 'color: #22c55e; font-weight: bold');
-  } else {
-    console.log(
-      `%c⚠️ RESERVE NOT MET: ${v.year} ${v.make} ${v.model} — bid ${fmt(amount)} < reserve ${fmt(v.reserve_price)}`,
-      'color: #f59e0b; font-weight: bold'
-    );
-  }
+  console.log(`%c✅ Bid placed: ${fmt(amount)} on ${v.year} ${v.make} ${v.model}`, 'color: #1d6fef');
+  console.log(`   Status is now: winning. Run endAuction("${v.lot}") to resolve.`);
 }
 
 /**
@@ -125,6 +128,8 @@ function placeBid(lotOrId, amount) {
  * @example endAuction('A-0009')
  */
 function endAuction(lotOrId) {
+  const store = getStore();
+  if (!store) return;
   const v = getVehicle(lotOrId);
   if (!v) { console.error(`❌ Vehicle not found: ${lotOrId}`); return; }
 
@@ -136,12 +141,13 @@ function endAuction(lotOrId) {
 
   store.dispatch({ type: 'AUCTION_END', vehicleId: v.id, reservePrice: v.reserve_price });
 
-  const meetsReserve = v.reserve_price == null || (entry.myBid ?? 0) >= v.reserve_price;
+  const bidAmt = entry.myBid ?? entry.currentBid;
+  const meetsReserve = v.reserve_price == null || (bidAmt ?? 0) >= v.reserve_price;
   if (meetsReserve) {
-    console.log(`%c🏆 WON: ${v.year} ${v.make} ${v.model} for ${fmt(entry.myBid)}`, 'color: #22c55e; font-weight: bold');
+    console.log(`%c🏆 WON: ${v.year} ${v.make} ${v.model} for ${fmt(bidAmt)}`, 'color: #22c55e; font-weight: bold');
   } else {
     console.log(
-      `%c⚠️ RESERVE NOT MET: ${v.year} ${v.make} ${v.model} — bid ${fmt(entry.myBid)} < reserve ${fmt(v.reserve_price)}`,
+      `%c⚠️ RESERVE NOT MET: ${v.year} ${v.make} ${v.model} — bid ${fmt(bidAmt)} < reserve ${fmt(v.reserve_price)}`,
       'color: #f59e0b; font-weight: bold'
     );
   }
@@ -153,24 +159,39 @@ function endAuction(lotOrId) {
  * @example outbid('A-0009')
  */
 function outbid(lotOrId) {
+  const store = getStore();
+  if (!store) return;
   const v = getVehicle(lotOrId);
   if (!v) { console.error(`❌ Vehicle not found: ${lotOrId}`); return; }
 
   const entry = store.getState().bids[v.id];
-  if (!entry || !entry.myBid) {
-    console.error(`❌ No bid found on ${v.year} ${v.make} ${v.model}`);
+  const bidAmount = entry?.myBid ?? entry?.currentBid;
+
+  if (!entry || bidAmount == null) {
+    console.error(`❌ No bid found on ${v.year} ${v.make} ${v.model}. Run placeBid("${v.lot}", amount) first.`);
     return;
   }
 
-  const bid = entry.myBid;
-  const increment = bid < 5000 ? 250 : bid < 10000 ? 500 : bid < 25000 ? 1000 : bid < 50000 ? 2500 : 5000;
-  const newBid = bid + increment;
+  if (entry.status === 'outbid') {
+    console.warn(`⚠️ Already outbid on ${v.year} ${v.make} ${v.model}. Run placeBid("${v.lot}", amount) to bid again.`);
+    return;
+  }
+
+  if (entry.status !== 'winning') {
+    console.warn(`⚠️ Cannot outbid — status is "${entry.status}" on ${v.year} ${v.make} ${v.model}`);
+    return;
+  }
+
+  const increment = bidAmount < 5000 ? 250
+    : bidAmount < 10000 ? 500
+    : bidAmount < 25000 ? 1000
+    : bidAmount < 50000 ? 2500
+    : 5000;
+  const newBid = bidAmount + increment;
 
   store.dispatch({ type: 'OUTBID', vehicleId: v.id, newCurrentBid: newBid });
-  console.log(
-    `%c📣 Outbid! ${v.year} ${v.make} ${v.model} — new current bid: ${fmt(newBid)}`,
-    'color: #f59e0b'
-  );
+  console.log(`%c📣 Outbid! ${v.year} ${v.make} ${v.model}`, 'color: #f59e0b; font-weight: bold');
+  console.log(`   Your bid: ${fmt(bidAmount)} → New current bid: ${fmt(newBid)}`);
 }
 
 /**
@@ -179,6 +200,8 @@ function outbid(lotOrId) {
  * @example resetBid('A-0009')
  */
 function resetBid(lotOrId) {
+  const store = getStore();
+  if (!store) return;
   const v = getVehicle(lotOrId);
   if (!v) { console.error(`❌ Vehicle not found: ${lotOrId}`); return; }
 
@@ -191,9 +214,14 @@ function resetBid(lotOrId) {
  * @example resetAll()
  */
 function resetAll() {
+  const store = getStore();
+  if (!store) return;
+
   store.dispatch({ type: 'RESET_ALL' });
   localStorage.removeItem('the-block:bids');
+  localStorage.removeItem('the-block:notifications');
   console.log('%c🔄 All bids reset', 'color: #ef4444; font-weight: bold');
+  console.log('   Store reference is always read fresh — you can placeBid() immediately.');
 }
 
 /**
@@ -211,7 +239,7 @@ search("query")
   e.g. search("Tesla"), search("A-0009"), search("2022")
 
 placeBid("lot", amount)
-  Bid on a vehicle and immediately end the auction
+  Place a bid → status: 'winning' (no resolution)
   e.g. placeBid("A-0009", 50000)
 
 endAuction("lot")
@@ -228,7 +256,7 @@ resetBid("lot")
   e.g. resetBid("A-0009")
 
 resetAll()
-  Wipe all bid state + localStorage
+  Wipe all bid state + localStorage (notifications cleared too)
 
 help()
   Show this message
@@ -238,17 +266,20 @@ Quick test flows:
 
   // Reserve not met:
   search("Toyota")
-  placeBid("X-0001", 5000)     // bid below reserve
+  placeBid("X-0001", 5000)     // status: winning
+  endAuction("X-0001")         // status: reserve_not_met
 
   // Won:
-  placeBid("X-0001", 999000)   // bid above reserve
+  placeBid("X-0001", 999000)   // status: winning
+  endAuction("X-0001")         // status: won
 
   // Outbid flow:
-  placeBid("X-0001", 50000)    // place bid (winning state)
-  outbid("X-0001")             // simulate competitor
+  placeBid("X-0001", 50000)    // status: winning
+  outbid("X-0001")             // status: outbid (no resolution)
 
-  // Clean slate:
+  // Clean slate + re-test:
   resetAll()
+  placeBid("X-0001", 50000)    // works immediately — no re-paste needed
 `, 'color: #1d6fef; font-weight: bold');
 }
 

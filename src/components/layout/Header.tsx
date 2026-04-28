@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Gavel, Trophy, Heart, LayoutGrid, SlidersHorizontal, Search, X } from 'lucide-react';
+import { BellButton } from '../ui/BellButton';
 import { useFilterContext } from '../../context/FilterContext';
 import { useBidStore } from '../../store/useBidStore';
 import { useLikeStore } from '../../store/useLikeStore';
@@ -87,6 +88,8 @@ export function Header() {
               isActive={viewMode === 'all'}
               onClick={() => setViewMode('all')}
             />
+
+            <BellButton />
 
             <div className="w-px h-4 bg-border-default mx-0.5" aria-hidden="true" />
 
@@ -198,6 +201,8 @@ export function Header() {
               isActive={viewMode === 'liked'}
               onClick={() => toggleViewMode('liked')}
             />
+            <div className="w-px h-4 bg-border-default mx-1" aria-hidden="true" />
+            <BellButton />
           </div>
         </div>
 

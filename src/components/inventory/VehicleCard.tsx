@@ -4,6 +4,8 @@ import { formatCurrency, formatOdometer, normalizeAuctionStart } from '../../uti
 import { useCountdown } from '../../hooks/useCountdown';
 import { useDrawer } from '../../context/DrawerContext';
 import { useBidStore } from '../../store/useBidStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
+import { useQuickBidContext } from '../../context/QuickBidContext';
 import { LikeButton } from './LikeButton';
 import { STRINGS } from '../../config/strings';
 import { THEME } from '../../config/theme';
@@ -34,6 +36,10 @@ interface VehicleCardProps {
 export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardProps) {
   const { openDrawer } = useDrawer();
   const { getBidEntry } = useBidStore();
+  const { urgentVehicleIds } = useNotificationStore();
+  const hasUrgent = urgentVehicleIds.has(vehicle.id);
+  const { setHoveredVehicle, quickBidState } = useQuickBidContext();
+  const isPending = quickBidState.pendingVehicleId === vehicle.id;
 
   const entry     = getBidEntry(vehicle.id);
   const displayBid = entry?.currentBid ?? vehicle.current_bid ?? vehicle.starting_bid;
@@ -58,13 +64,17 @@ export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardPro
     <div
       onClick={() => openDrawer(vehicle)}
       onKeyDown={handleKeyDown}
+      onMouseEnter={() => setHoveredVehicle(vehicle)}
+      onMouseLeave={() => setHoveredVehicle(null)}
       role="button"
       tabIndex={0}
       aria-label={`${STRINGS.drawer.viewDetails}: ${vehicle.year} ${vehicle.make} ${vehicle.model}`}
       className={`group bg-bg-surface border rounded-xl overflow-hidden shadow-card hover:shadow-card-hover active:scale-[0.98] transition-[shadow,transform] duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-brand ${
-        isWinning
-          ? 'border-status-clean/40 ring-1 ring-status-clean/20'
-          : 'border-border-subtle'
+        isPending
+          ? 'border-brand ring-2 ring-brand/30'
+          : isWinning
+            ? 'border-status-clean/40 ring-1 ring-status-clean/20'
+            : 'border-border-subtle'
       }`}
     >
       {/* Image */}
@@ -75,7 +85,19 @@ export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardPro
           className="w-full h-full object-cover"
           loading="lazy"
         />
-        <div className="absolute top-2 left-2">
+        {hasUrgent && (
+          <span className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-status-salvage animate-pulse z-10" aria-hidden="true" />
+        )}
+        {/* Quick bid pending overlay */}
+        {isPending && (
+          <div className="absolute bottom-0 left-0 right-0 bg-brand/90 px-3 py-2 flex items-center justify-between z-10">
+            <span className="text-text-inverse text-xs font-semibold">
+              Quick Bid {formatCurrency(quickBidState.pendingAmount ?? 0)}
+            </span>
+            <span className="text-text-inverse/70 text-xs">2 to confirm</span>
+          </div>
+        )}
+        <div className={`absolute top-2 ${hasUrgent ? 'left-6' : 'left-2'}`}>
           <span className={`px-1.5 py-0.5 rounded text-card-label font-bold uppercase ${THEME.titleStatusBadge[vehicle.title_status]}`}>
             {vehicle.title_status}
           </span>

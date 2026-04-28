@@ -173,4 +173,28 @@ export const STRINGS = {
   detail: {
     comingSoon: 'Vehicle detail coming soon',
   },
+  notifications: {
+    title:        'Notifications',
+    markAllRead:  'Mark all read',
+    clearAll:     'Clear all',
+    empty:        'No notifications yet',
+    emptyHint:    'Bid on or like vehicles to receive auction alerts',
+
+    outbid:          (name: string, amount: string) => `You've been outbid on ${name}. Current bid: ${amount}`,
+    won:             (name: string, amount: string) => `You won ${name} for ${amount}!`,
+    reserveNotMet:   (name: string) => `Reserve not met on ${name}. Raise your bid to win.`,
+    endingSoon:      (name: string, time: string) => `${name} ends in ${time}`,
+    likedEndingSoon: (name: string, time: string) => `Liked vehicle ${name} ends in ${time}`,
+
+    tabs: {
+      all:     'All',
+      urgent:  'Urgent',
+      bids:    'Bids',
+      watched: 'Watched',
+    },
+
+    quickBidShortcuts: 'Quick Bid Shortcuts',
+    quickBid:          (amount: string) => `Quick Bid ${amount}`,
+    bidNow:            'Bid Now',
+  },
 } as const;

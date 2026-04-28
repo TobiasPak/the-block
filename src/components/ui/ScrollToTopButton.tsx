@@ -2,11 +2,12 @@ import { ArrowUp } from 'lucide-react';
 import { type RefObject } from 'react';
 import { useScrollVisibility } from '../../hooks/useScrollVisibility';
 import { useDrawer } from '../../context/DrawerContext';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { STRINGS } from '../../config/strings';
 
-const DRAWER_WIDTH = 440;
-const BUTTON_GAP = 12;
+const PANEL_WIDTH = 440;
+const BUTTON_GAP  = 12;
 
 interface ScrollToTopButtonProps {
   scrollRef: RefObject<HTMLElement | null>;
@@ -15,14 +16,15 @@ interface ScrollToTopButtonProps {
 export function ScrollToTopButton({ scrollRef }: ScrollToTopButtonProps) {
   const visible = useScrollVisibility(800, scrollRef);
   const { selectedVehicle } = useDrawer();
-  const drawerOpen = selectedVehicle !== null;
+  const { isSidebarOpen } = useNotificationStore();
   const isMobile = useMediaQuery('(max-width: 767px)');
+
+  const anyPanelOpen = (selectedVehicle !== null || isSidebarOpen) && !isMobile;
+  const rightOffset  = anyPanelOpen ? `${PANEL_WIDTH + BUTTON_GAP}px` : '24px';
 
   function handleClick() {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
-
-  const rightOffset = drawerOpen && !isMobile ? `${DRAWER_WIDTH + BUTTON_GAP}px` : '24px';
 
   return (
     <button
