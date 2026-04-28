@@ -120,6 +120,9 @@ export const STRINGS = {
     buyNowPrice:          'Buy Now Price',
     confirmBuyNow:        'Confirm Purchase',
     cancel:               'Cancel',
+    reserveNotMet:        'Reserve Not Met',
+    reserveNotMetShort:   'RESERVE',
+    reserveNotMetHint:    "Your bid didn't meet the seller's reserve. Raise your bid to win this vehicle.",
     lotLabel:             'Lot',
   },
   nav: {

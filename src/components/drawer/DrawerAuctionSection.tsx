@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 import type { Vehicle } from '../../types/vehicle';
 import { formatCurrency, normalizeAuctionStart } from '../../utils/format';
 import { useCountdown } from '../../hooks/useCountdown';
@@ -134,24 +134,41 @@ export function DrawerAuctionSection({ vehicle }: DrawerAuctionSectionProps) {
     if (activeLayer === 'normal') {
       setAnimateHeight(false);
       requestAnimationFrame(() => {
-        const h = layerARef.current?.scrollHeight;
-        if (h) setContainerHeight(h);
+        requestAnimationFrame(() => {
+          const h = layerARef.current?.scrollHeight ?? 0;
+          setContainerHeight(h > 0 ? h : 'auto');
+        });
       });
     } else {
       setAnimateHeight(true);
       const ref = activeLayer === 'buynow' ? layerBRef : layerCRef;
       requestAnimationFrame(() => {
-        const h = ref.current?.scrollHeight;
-        if (h) setContainerHeight(h);
+        requestAnimationFrame(() => {
+          const h = ref.current?.scrollHeight ?? 0;
+          if (h > 0) setContainerHeight(h);
+        });
       });
     }
   }, [activeLayer]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const currentBid = entry?.currentBid ?? vehicle.current_bid;
-  const bidCount   = entry?.bidCount   ?? vehicle.bid_count;
-  const isWinning  = entry?.status === 'winning';
-  const isWon      = entry?.status === 'won';
-  const displayBid = currentBid ?? vehicle.starting_bid;
+  // Status change — re-measure Layer A when bid status changes while normal
+  // (e.g. reserve_not_met banner appears, making Layer A taller)
+  useEffect(() => {
+    if (activeLayer !== 'normal') return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const h = layerARef.current?.scrollHeight ?? 0;
+        setContainerHeight(h > 0 ? h : 'auto');
+      });
+    });
+  }, [entry?.status, activeLayer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const currentBid       = entry?.currentBid ?? vehicle.current_bid;
+  const bidCount         = entry?.bidCount   ?? vehicle.bid_count;
+  const isWinning        = entry?.status === 'winning';
+  const isWon            = entry?.status === 'won';
+  const isReserveNotMet  = entry?.status === 'reserve_not_met';
+  const displayBid       = currentBid ?? vehicle.starting_bid;
 
   const bidLabel = isWon
     ? STRINGS.bidding.amountPaid
@@ -199,7 +216,7 @@ export function DrawerAuctionSection({ vehicle }: DrawerAuctionSectionProps) {
                   </>
                 )}
               </div>
-              {entry?.myBid && !isWon && (
+              {entry?.myBid && !isWon && !isReserveNotMet && (
                 <span className="text-card-meta text-status-clean">
                   {STRINGS.bidding.yourBid}: {formatCurrency(entry.myBid)}
                 </span>
@@ -207,17 +224,30 @@ export function DrawerAuctionSection({ vehicle }: DrawerAuctionSectionProps) {
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className="text-card-count text-text-muted">{STRINGS.vehicle.bids(bidCount)}</span>
-              {isWon ? (
+              {isWon || isReserveNotMet ? (
                 <span className="text-card-meta text-text-secondary">
-                  {entry?.purchaseMethod === 'buy_now'
-                    ? STRINGS.bidding.purchasedViaBuyNow
-                    : STRINGS.bidding.purchasedViaAuction}
+                  {isWon
+                    ? (entry?.purchaseMethod === 'buy_now'
+                        ? STRINGS.bidding.purchasedViaBuyNow
+                        : STRINGS.bidding.purchasedViaAuction)
+                    : ''}
                 </span>
               ) : (
                 <CountdownDisplay auctionStart={vehicle.auction_start} />
               )}
             </div>
           </div>
+
+          {/* Reserve not met banner */}
+          {isReserveNotMet && (
+            <div className="bg-status-rebuilt/10 border border-status-rebuilt/30 rounded-xl px-4 py-3 flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} className="text-status-rebuilt flex-shrink-0" aria-hidden="true" />
+                <span className="text-sm font-semibold text-status-rebuilt">{STRINGS.bidding.reserveNotMet}</span>
+              </div>
+              <p className="text-card-meta text-text-secondary pl-6">{STRINGS.bidding.reserveNotMetHint}</p>
+            </div>
+          )}
 
           {/* Won banner */}
           {isWon && (
@@ -230,8 +260,8 @@ export function DrawerAuctionSection({ vehicle }: DrawerAuctionSectionProps) {
             </div>
           )}
 
-          {/* Buy Now banner */}
-          {vehicle.buy_now_price !== null && !isWon && (
+          {/* Buy Now banner — hide when reserve not met (focus on raising bid instead) */}
+          {vehicle.buy_now_price !== null && !isWon && !isReserveNotMet && (
             <button
               onClick={() => setActiveLayer('buynow')}
               className="w-full flex items-center justify-between bg-brand-subtle border border-brand/30 rounded-xl px-4 py-3 hover:bg-brand-subtle/80 transition-colors cursor-pointer active:opacity-70"
@@ -241,13 +271,13 @@ export function DrawerAuctionSection({ vehicle }: DrawerAuctionSectionProps) {
             </button>
           )}
 
-          {/* Place / Raise Bid */}
+          {/* Place / Raise Bid — also shown for reserve_not_met so user can bid higher */}
           {!isWon && (
             <button
               onClick={() => setActiveLayer('bid')}
               className="w-full bg-brand hover:bg-brand-hover active:opacity-80 text-text-inverse font-semibold py-3 rounded-xl text-base transition-colors"
             >
-              {isWinning ? STRINGS.bidding.raiseBid : STRINGS.bidding.placeBid}
+              {isWinning || isReserveNotMet ? STRINGS.bidding.raiseBid : STRINGS.bidding.placeBid}
             </button>
           )}
         </div>

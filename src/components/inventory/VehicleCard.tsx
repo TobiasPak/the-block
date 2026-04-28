@@ -38,10 +38,11 @@ export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardPro
   const entry     = getBidEntry(vehicle.id);
   const displayBid = entry?.currentBid ?? vehicle.current_bid ?? vehicle.starting_bid;
   const bidCount   = entry?.bidCount   ?? vehicle.bid_count;
-  const isWinning  = entry?.status === 'winning';
-  const isWon      = entry?.status === 'won';
-  const bidLabel   = isWon
-    ? STRINGS.bidding.amountPaid
+  const isWinning       = entry?.status === 'winning';
+  const isWon           = entry?.status === 'won';
+  const isReserveNotMet = entry?.status === 'reserve_not_met';
+  const bidLabel   = isWon || isReserveNotMet
+    ? STRINGS.bidding.yourBid
     : (entry?.currentBid ?? vehicle.current_bid) !== null
       ? STRINGS.vehicle.currentBid
       : STRINGS.vehicle.startingAt;
@@ -132,6 +133,14 @@ export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardPro
                 <span className="text-bid-dot text-brand leading-none select-none" aria-hidden="true">·</span>
                 <span className="text-bid-winning text-brand leading-none uppercase">
                   {STRINGS.bidding.won}
+                </span>
+              </>
+            )}
+            {isReserveNotMet && (
+              <>
+                <span className="text-bid-dot text-status-rebuilt leading-none select-none" aria-hidden="true">·</span>
+                <span className="text-bid-winning text-status-rebuilt leading-none uppercase">
+                  {STRINGS.bidding.reserveNotMetShort}
                 </span>
               </>
             )}

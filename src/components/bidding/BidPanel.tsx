@@ -37,7 +37,7 @@ function buildIncrements(currentBid: number | null, startingBid: number) {
 }
 
 export function BidPanel({ vehicle, onClose, isActive, initialAmount }: BidPanelProps) {
-  const { getBidEntry, placeBid } = useBidStore();
+  const { getBidEntry, placeBid, auctionEnd } = useBidStore();
   const entry = getBidEntry(vehicle.id);
 
   const currentBid    = entry?.currentBid ?? vehicle.current_bid;
@@ -107,6 +107,8 @@ export function BidPanel({ vehicle, onClose, isActive, initialAmount }: BidPanel
 
   function handleConfirm() {
     placeBid(vehicle.id, selectedAmount, baseBidCount);
+    // Simulate auction end: check reserve after PLACE_BID has updated the store
+    setTimeout(() => auctionEnd(vehicle.id, vehicle.reserve_price), 0);
     onClose();
   }
 

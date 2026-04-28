@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { FilterProvider } from '../context/FilterContext';
 import { Header } from '../components/layout/Header';
 import { VehicleGrid } from '../components/inventory/VehicleGrid';
@@ -10,6 +10,13 @@ import { vehicles } from '../data/vehicles';
 export function InventoryPage() {
   const inventory = useInventory(vehicles);
   const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__vehicles = vehicles;
+    }
+  }, []);
 
   return (
     <FilterProvider value={inventory}>
