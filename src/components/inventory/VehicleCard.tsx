@@ -119,8 +119,8 @@ export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardPro
       {/* Body */}
       <div className="p-3">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="min-w-0">
-            <h3 className="text-card-title text-text-primary leading-tight truncate">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-card-title text-text-primary leading-tight truncate min-w-0">
               {vehicle.year} {vehicle.make} {vehicle.model} {vehicle.trim}
             </h3>
             <p className="text-card-meta text-text-secondary truncate capitalize mt-0.5">
@@ -135,42 +135,50 @@ export const VehicleCard = memo(function VehicleCard({ vehicle }: VehicleCardPro
       </div>
 
       {/* Footer */}
-      <div className="px-3 pb-3 pt-2 border-t border-border-default flex items-end justify-between gap-2">
+      <div className="px-3 pb-3 pt-2 border-t border-border-default">
         <div className="flex flex-col gap-0.5">
-          <span className="text-bid-label text-text-muted uppercase">{bidLabel}</span>
-          <div className="flex items-baseline gap-2">
+
+          {/* Row 1: bid label (left) + bid count (right) */}
+          <div className="flex items-center justify-between">
+            <span className="text-bid-label text-text-muted uppercase">{bidLabel}</span>
+            <span className="text-card-count text-text-muted flex-shrink-0">
+              {STRINGS.vehicle.bids(bidCount)}
+            </span>
+          </div>
+
+          {/* Row 2: bid amount (left) + countdown (right) */}
+          <div className="flex items-center justify-between gap-2">
             <span className="text-bid-amount text-text-primary leading-none">
               {formatCurrency(displayBid)}
             </span>
-            {isWinning && (
-              <>
-                <span className="text-bid-dot text-status-clean leading-none select-none" aria-hidden="true">·</span>
-                <span className="text-bid-winning text-status-clean leading-none uppercase">
-                  {STRINGS.bidding.winning}
-                </span>
-              </>
-            )}
-            {isWon && (
-              <>
-                <span className="text-bid-dot text-brand leading-none select-none" aria-hidden="true">·</span>
-                <span className="text-bid-winning text-brand leading-none uppercase">
-                  {STRINGS.bidding.won}
-                </span>
-              </>
-            )}
-            {isReserveNotMet && (
-              <>
-                <span className="text-bid-dot text-status-rebuilt leading-none select-none" aria-hidden="true">·</span>
-                <span className="text-bid-winning text-status-rebuilt leading-none uppercase">
-                  {STRINGS.bidding.reserveNotMetShort}
-                </span>
-              </>
-            )}
+            <span className="flex-shrink-0">
+              <CountdownBadge auctionStart={vehicle.auction_start} />
+            </span>
           </div>
-        </div>
-        <div className="flex flex-col items-end gap-0.5">
-          <span className="text-card-count text-text-muted">{STRINGS.vehicle.bids(bidCount)}</span>
-          <CountdownBadge auctionStart={vehicle.auction_start} />
+
+          {/* Row 3: status label — own line, only when active */}
+          {(isWinning || isWon || isReserveNotMet) && (
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span
+                className={`text-bid-dot leading-none select-none ${
+                  isWinning ? 'text-status-clean' : isWon ? 'text-brand' : 'text-status-rebuilt'
+                }`}
+                aria-hidden="true"
+              >·</span>
+              <span
+                className={`text-bid-winning leading-none uppercase ${
+                  isWinning ? 'text-status-clean' : isWon ? 'text-brand' : 'text-status-rebuilt'
+                }`}
+              >
+                {isWinning
+                  ? STRINGS.bidding.winning
+                  : isWon
+                    ? STRINGS.bidding.won
+                    : STRINGS.bidding.reserveNotMetShort}
+              </span>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

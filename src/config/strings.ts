@@ -68,11 +68,6 @@ export const STRINGS = {
     condition:   (grade: number) => `${grade.toFixed(1)} / 5.0 condition`,
     lot:         'Lot',
   },
-  pagination: {
-    previous: 'Previous page',
-    next:     'Next page',
-    pageOf:   (current: number, total: number) => `Page ${current} of ${total}`,
-  },
   range: {
     minCurrency: 'Min ($)',
     maxCurrency: 'Max ($)',
@@ -169,9 +164,6 @@ export const STRINGS = {
     bodyStyle:    'Body Style',
     extColor:     'Exterior Color',
     intColor:     'Interior Color',
-  },
-  detail: {
-    comingSoon: 'Vehicle detail coming soon',
   },
   notifications: {
     title:        'Notifications',

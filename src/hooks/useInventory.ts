@@ -171,6 +171,7 @@ export function useInventory(allVehicles: Vehicle[]): UseInventoryReturn {
   const resetFilters = useCallback(() => {
     setFiltersRaw(DEFAULT_FILTERS);
     setSortByRaw(DEFAULT_SORT);
+    setSearchQueryRaw('');
   }, []);
 
   return {

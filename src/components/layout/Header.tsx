@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Gavel, Trophy, Heart, LayoutGrid, SlidersHorizontal, Search, X } from 'lucide-react';
 import { BellButton } from '../ui/BellButton';
 import { useFilterContext } from '../../context/FilterContext';
@@ -28,6 +28,11 @@ export function Header() {
 
   const mobileSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mobileInputValue, setMobileInputValue] = useState(searchQuery);
+
+  // Sync external reset (e.g. from resetFilters) back into mobile input state
+  useEffect(() => {
+    if (searchQuery === '') setMobileInputValue('');
+  }, [searchQuery]);
 
   function handleMobileSearch(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;

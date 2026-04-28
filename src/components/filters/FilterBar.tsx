@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import type { SetStateAction } from 'react';
 import type { Filters, SortBy, AvailableOptions } from '../../hooks/useInventory';
@@ -43,6 +43,11 @@ export function FilterBar({
   const [open, setOpen] = useState<DropdownId | null>(null);
   const [inputValue, setInputValue] = useState(searchQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync external reset (e.g. from resetFilters) back into local input state
+  useEffect(() => {
+    if (searchQuery === '') setInputValue('');
+  }, [searchQuery]);
 
   function openDropdown(id: DropdownId) { setOpen(id); }
   function closeDropdown() { setOpen(null); }
